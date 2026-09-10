@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoltGuard — Cadastro de Aparelhos</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <div>
+        <div class="brand-title"><span class="volt">Volt</span><span class="guard">Guard</span></div>
+        <div class="brand-subtitle">CADASTRO DE APARELHOS E CORRENTES DE REFERÊNCIA</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <a href="/configuracoes" class="btn-secondary">⚙ Configurações</a>
+      <a href="/" class="btn-secondary">← Voltar ao dashboard</a>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="card-title" id="form-titulo">NOVO APARELHO</div>
+    <p class="card-subtitle" style="margin-bottom:16px;">
+      A corrente de referência é o valor "normal" de operação do aparelho (em Amperes).
+      É a partir dela que o VoltGuard calcula os status NORMAL / ATENÇÃO / ANORMAL —
+      ver seção 12 do documento-base do projeto.
+    </p>
+
+    <form id="form-aparelho" class="form-grid">
+      <div class="form-group">
+        <label for="input-nome">Nome do aparelho</label>
+        <input type="text" id="input-nome" placeholder="Ex: Geladeira, Micro-ondas..." required>
+      </div>
+      <div class="form-group">
+        <label for="input-referencia">Corrente de referência (A)</label>
+        <input type="number" id="input-referencia" step="0.01" min="0" placeholder="Ex: 2.00" required>
+      </div>
+      <div class="form-group">
+        <label for="input-potencia">Potência estimada (W) <small>— da etiqueta do aparelho</small></label>
+        <input type="number" id="input-potencia" step="1" min="0" placeholder="Ex: 1800">
+      </div>
+      <div class="form-group">
+        <label for="input-inicio">Horário de funcionamento — início</label>
+        <input type="time" id="input-inicio">
+      </div>
+      <div class="form-group">
+        <label for="input-fim">Horário de funcionamento — fim</label>
+        <input type="time" id="input-fim">
+      </div>
+      <div class="form-group">
+        <label class="checkbox-inline"><input type="checkbox" id="input-rele" checked> Este aparelho tem relé de proteção</label>
+      </div>
+      <div class="form-group form-actions">
+        <button type="submit" class="btn-primary" id="btn-salvar">Salvar</button>
+        <button type="button" class="btn-secondary" id="btn-cancelar" style="display:none;">Cancelar edição</button>
+      </div>
+    </form>
+    <div id="form-msg" class="form-msg"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-title">APARELHOS CADASTRADOS</div>
+    <table class="tabela-aparelhos">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Referência</th>
+          <th>ATENÇÃO / ANORMAL</th>
+          <th>Potência</th>
+          <th>Horário</th>
+          <th>Relé</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tabela-aparelhos-body">
+        <tr><td colspan="7" class="tabela-vazio">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/aparelhos.js') }}"></script>
+</body>
+</html>

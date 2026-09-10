@@ -1,0 +1,10 @@
+Flask==3.0.3
+requests==2.32.3
+reportlab==4.2.5
+matplotlib==3.9.2
+paho-mqtt==2.1.0
+flet==0.86.5
+flet-web==0.86.5
+flet-charts==0.86.5
+# servidor de produção (nuvem) — não instala no Windows, e não é necessário lá
+gunicorn==23.0.0; sys_platform != "win32"

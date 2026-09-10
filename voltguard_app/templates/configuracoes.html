@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoltGuard — Configurações</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <div>
+        <div class="brand-title"><span class="volt">Volt</span><span class="guard">Guard</span></div>
+        <div class="brand-subtitle">CONFIGURAÇÕES — LIMITES, TARIFA E CONEXÃO DO ESP32</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <a href="/aparelhos-config" class="btn-secondary">⚙ Aparelhos</a>
+      <a href="/" class="btn-secondary">← Voltar ao dashboard</a>
+    </div>
+  </header>
+
+  <form id="form-config">
+  <section class="card">
+    <div class="card-title">LOCAL MONITORADO</div>
+    <div class="form-grid" style="margin-top:12px;">
+      <div class="form-group"><label>Nome do estabelecimento</label><input type="text" id="cfg-nome_local" required></div>
+      <div class="form-group"><label>Tensão nominal da rede (V)</label><input type="number" id="cfg-tensao_nominal" step="1" required></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-title">LIMITES DE PROTEÇÃO</div>
+    <p class="card-subtitle" style="margin-bottom:12px;">Fora desta faixa o VoltGuard registra alerta e, com a proteção automática ligada, desliga o relé do aparelho.</p>
+    <div class="form-grid form-grid-3">
+      <div class="form-group"><label>Tensão mínima aceitável (V)</label><input type="number" id="cfg-tensao_minima" step="1" required></div>
+      <div class="form-group"><label>Tensão máxima aceitável (V)</label><input type="number" id="cfg-tensao_maxima" step="1" required></div>
+      <div class="form-group"><label>Temperatura máxima no quadro (°C)</label><input type="number" id="cfg-temperatura_maxima" step="1" required></div>
+      <div class="form-group"><label class="checkbox-inline"><input type="checkbox" id="cfg-protecao_automatica"> Proteção automática (relé desliga sozinho)</label></div>
+      <div class="form-group"><label class="checkbox-inline"><input type="checkbox" id="cfg-religar_automatico"> Religar automaticamente quando normalizar</label></div>
+      <div class="form-group"><label>Leituras normais seguidas para religar</label><input type="number" id="cfg-leituras_para_religar" min="1" max="60" step="1" required></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-title">CONTA DE ENERGIA</div>
+    <div class="form-grid form-grid-3" style="margin-top:12px;">
+      <div class="form-group"><label>Tarifa (R$/kWh) — da conta de luz</label><input type="number" id="cfg-tarifa_kwh" step="0.0001" min="0" required></div>
+      <div class="form-group"><label>Bandeira tarifária</label>
+        <select id="cfg-bandeira">
+          <option value="verde">Verde (sem adicional)</option>
+          <option value="amarela">Amarela (+ R$ 0,01885/kWh)</option>
+          <option value="vermelha1">Vermelha patamar 1 (+ R$ 0,04463/kWh)</option>
+          <option value="vermelha2">Vermelha patamar 2 (+ R$ 0,07877/kWh)</option>
+        </select></div>
+      <div class="form-group"><label>Meta de consumo diário (kWh)</label><input type="number" id="cfg-consumo_max_diario_kwh" step="0.5" min="0" required></div>
+    </div>
+    <div class="card-subtitle" style="margin-top:10px;">Tarifa efetiva atual: <b id="cfg-tarifa-efetiva">--</b></div>
+  </section>
+
+  <div class="form-actions" style="margin-bottom:22px;">
+    <button type="submit" class="btn-primary">Salvar configurações</button>
+    <span id="cfg-msg" class="form-msg"></span>
+  </div>
+  </form>
+
+  <section class="card">
+    <div class="card-title">CONEXÃO DO ESP32 <span class="muted-inline">copie estes dados para o firmware</span></div>
+    <div class="conexao-grid" id="conexao-grid">
+      <div class="conexao-item"><span>URL do painel (link único)</span><code id="cx-url">--</code></div>
+      <div class="conexao-item"><span>Endpoint HTTP para leituras (POST)</span><code id="cx-endpoint">--</code></div>
+      <div class="conexao-item"><span>Broker MQTT</span><code id="cx-broker">--</code></div>
+      <div class="conexao-item"><span>Tópico de sensores (ESP32 publica)</span><code id="cx-top-sens">--</code></div>
+      <div class="conexao-item"><span>Tópico de comando (ESP32 assina)</span><code id="cx-top-cmd">--</code></div>
+      <div class="conexao-item"><span>Estado do MQTT</span><code id="cx-mqtt-estado">--</code></div>
+    </div>
+    <p class="card-subtitle" style="margin-top:12px;">JSON que o ESP32 envia (HTTP ou MQTT):</p>
+    <pre class="json-exemplo" id="cx-json">--</pre>
+  </section>
+
+</div>
+<script src="{{ url_for('static', filename='js/configuracoes.js') }}"></script>
+</body>
+</html>

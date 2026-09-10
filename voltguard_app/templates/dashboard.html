@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoltGuard — Monitoramento de Energia</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<script src="{{ url_for('static', filename='js/vendor/chart.umd.min.js') }}"></script>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <div>
+        <div class="brand-title"><span class="volt">Volt</span><span class="guard">Guard</span></div>
+        <div class="brand-subtitle">SISTEMA DE MONITORAMENTO E PROTEÇÃO DE ENERGIA ELÉTRICA</div>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <div class="clock" id="clock">--:--:--</div>
+      <span class="mqtt-pill" id="mqtt-pill" title="Conexão MQTT com o ESP32">MQTT</span>
+      <a href="/aparelhos-config" class="btn-secondary">⚙ Aparelhos</a>
+      <a href="/configuracoes" class="btn-secondary">⚙ Configurações</a>
+      <div class="toggle-group" id="periodo-toggle">
+        <button class="toggle-btn" data-periodo="ontem">Ontem</button>
+        <button class="toggle-btn active" data-periodo="hoje">Hoje</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================== MEDIDOR AO VIVO ===================== -->
+  <section class="card">
+    <div id="alerta-banner" class="alerta-banner" style="display:none;">
+      <span id="alerta-icone">⚠</span>
+      <span id="alerta-texto">--</span>
+    </div>
+
+    <div class="card-header">
+      <div>
+        <div class="card-title">MEDIDOR DE ENERGIA — AO VIVO</div>
+        <div class="card-subtitle" id="meter-subtitle">Selecione um aparelho · --</div>
+      </div>
+      <div class="aparelho-select-wrap">
+        <label for="aparelho-select">Aparelho</label>
+        <select id="aparelho-select"></select>
+      </div>
+    </div>
+
+    <div class="meter-body">
+      <div class="gauge-wrap">
+        <canvas id="gauge-tensao" width="220" height="140"></canvas>
+        <div class="gauge-value" id="valor-tensao">--</div>
+        <div class="gauge-label">TENSÃO</div>
+      </div>
+
+      <div class="gauge-wrap">
+        <canvas id="gauge-corrente" width="220" height="140"></canvas>
+        <div class="gauge-value" id="valor-corrente">--</div>
+        <div class="gauge-label">CORRENTE</div>
+      </div>
+
+      <div class="stat-block">
+        <div class="stat-label">POTÊNCIA</div>
+        <div class="stat-value" id="valor-potencia">-- <span>kW</span></div>
+        <div class="stat-label" style="margin-top:14px;">KWH HOJE</div>
+        <div class="stat-value" id="valor-kwh-hoje">-- <span>kWh</span></div>
+        <div class="stat-label" style="margin-top:14px;">TEMPERATURA DO QUADRO</div>
+        <div class="stat-value" id="valor-temperatura">-- <span>°C</span></div>
+      </div>
+    </div>
+
+    <div class="status-badge-row">
+      <span>Status:</span>
+      <span id="status-badge" class="badge badge-normal">--</span>
+      <span id="referencia-info" class="referencia-info"></span>
+      <span id="tensao-info" class="referencia-info"></span>
+    </div>
+  </section>
+
+  <!-- ===================== RELÉ + CUSTO ===================== -->
+  <div class="grid-2">
+    <section class="card">
+      <div class="card-header">
+        <div class="card-title">PROTEÇÃO — RELÉ DO APARELHO</div>
+        <span id="rele-badge" class="badge badge-normal">--</span>
+      </div>
+      <p class="card-subtitle" id="rele-motivo">O relé desliga automaticamente o aparelho quando a tensão sai da faixa configurada.</p>
+      <div class="rele-acoes">
+        <button id="btn-rele-desligar" class="btn-perigo">⏻ Desligar agora</button>
+        <button id="btn-rele-ligar" class="btn-primary">⚡ Religar</button>
+        <span id="rele-msg" class="form-msg"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-title">CUSTO DE ENERGIA</div>
+      <div class="custo-grid">
+        <div><div class="stat-label">ESTE APARELHO HOJE</div><div class="custo-valor" id="custo-aparelho">R$ --</div></div>
+        <div><div class="stat-label">TODOS OS APARELHOS HOJE</div><div class="custo-valor" id="custo-total">R$ --</div></div>
+        <div><div class="stat-label">TARIFA EFETIVA</div><div class="custo-valor custo-valor-pequeno" id="custo-tarifa">R$ --/kWh</div></div>
+      </div>
+      <div class="meta-wrap">
+        <div class="meta-texto"><span>META DIÁRIA</span><span id="meta-texto">-- / -- kWh</span></div>
+        <div class="meta-barra"><div class="meta-barra-preenchida" id="meta-barra"></div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== LEITURAS ===================== -->
+  <section class="card">
+    <div class="card-header">
+      <div class="card-title">LEITURAS <span class="muted-inline" id="leituras-kwh">-- kWh</span></div>
+      <div class="botoes-acao">
+        <button id="btn-exportar-csv" class="btn-secondary">Exportar CSV</button>
+        <button id="btn-relatorio" class="btn-primary">Gerar relatório técnico (PDF)</button>
+      </div>
+    </div>
+    <div class="chart-box">
+      <canvas id="chart-leituras"></canvas>
+    </div>
+  </section>
+
+  <!-- ===================== 24H + 30 DIAS ===================== -->
+  <div class="grid-2">
+    <section class="card">
+      <div class="card-title">ÚLTIMAS 24 HORAS</div>
+      <div class="stats-circles">
+        <div class="circle-stat">
+          <div class="circle-stat-value" id="stat-atual">--</div>
+          <div class="circle-stat-unit">W</div>
+          <div class="circle-stat-label">Atual</div>
+        </div>
+        <div class="circle-stat">
+          <div class="circle-stat-value" id="stat-standby">--</div>
+          <div class="circle-stat-unit">W</div>
+          <div class="circle-stat-label">Standby</div>
+        </div>
+        <div class="circle-stat">
+          <div class="circle-stat-value" id="stat-pico">--</div>
+          <div class="circle-stat-unit">W</div>
+          <div class="circle-stat-label">Pico</div>
+        </div>
+        <div class="circle-stat">
+          <div class="circle-stat-value" id="stat-hoje">--</div>
+          <div class="circle-stat-unit">kWh</div>
+          <div class="circle-stat-label">Hoje</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-title">ÚLTIMOS 30 DIAS</div>
+      <div class="chart-box chart-box-small">
+        <canvas id="chart-30dias"></canvas>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== STANDBY + PROTEÇÕES ===================== -->
+  <div class="grid-2">
+    <section class="card">
+      <div class="card-title">PERDA EM STANDBY — HOJE</div>
+      <div class="standby-body">
+        <div class="donut-wrap">
+          <canvas id="chart-standby" width="180" height="180"></canvas>
+        </div>
+        <div class="standby-legend">
+          <div class="legend-item"><span class="dot dot-teal"></span> ATIVO <b id="pct-ativo">--%</b></div>
+          <div class="legend-item"><span class="dot dot-navy"></span> STANDBY <b id="pct-standby">--%</b></div>
+          <div class="perda-label">PERDA ESTIMADA</div>
+          <div class="perda-valor" id="perda-reais">R$ --/mês</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-title">STATUS DAS PROTEÇÕES</div>
+      <div class="protecoes-grid" id="protecoes-grid">
+        <div class="protecao-card" data-prot="sobretensao">
+          <span class="dot dot-verde"></span>
+          <div><div class="protecao-nome">Sobretensão</div><div class="protecao-status">--</div></div>
+        </div>
+        <div class="protecao-card" data-prot="curto_circuito">
+          <span class="dot dot-verde"></span>
+          <div><div class="protecao-nome">Curto-circuito</div><div class="protecao-status">--</div></div>
+        </div>
+        <div class="protecao-card" data-prot="harmonicas_dht">
+          <span class="dot dot-verde"></span>
+          <div><div class="protecao-nome">Harmônicas DHT</div><div class="protecao-status">--</div></div>
+        </div>
+        <div class="protecao-card" data-prot="temperatura">
+          <span class="dot dot-azul"></span>
+          <div><div class="protecao-nome">Temperatura (DHT22)</div><div class="protecao-status">--</div></div>
+        </div>
+        <div class="protecao-card" data-prot="rele">
+          <span class="dot dot-verde"></span>
+          <div><div class="protecao-nome">Relé de proteção</div><div class="protecao-status">--</div></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== DICAS ===================== -->
+  <section class="card">
+    <div class="card-title">DICAS DE ECONOMIA E SEGURANÇA <span class="muted-inline">geradas a partir das leituras e do seu cadastro</span></div>
+    <div id="dicas-lista" class="dicas-lista"></div>
+  </section>
+
+  <!-- ===================== ALERTAS / OCORRÊNCIAS ===================== -->
+  <section class="card">
+    <div class="card-header">
+      <div class="card-title">ALERTAS E HISTÓRICO DE OCORRÊNCIAS</div>
+      <label class="checkbox-inline">
+        <input type="checkbox" id="filtro-ocorrencias-aparelho">
+        somente "<span id="filtro-aparelho-nome">--</span>"
+      </label>
+    </div>
+    <div id="ocorrencias-lista" class="ocorrencias-lista">
+      <div class="ocorrencias-vazio">Nenhuma ocorrência registrada até o momento.</div>
+    </div>
+  </section>
+
+  <!-- ===================== LEITURA MANUAL + OBSERVAÇÕES ===================== -->
+  <div class="grid-2">
+    <section class="card">
+      <div class="card-title">LEITURA MANUAL <span class="muted-inline">multímetro / teste sem sensor</span></div>
+      <p class="card-subtitle" style="margin-bottom:12px;">Digite o valor lido no multímetro para comparar com o sensor ou testar os alertas.</p>
+      <form id="form-manual" class="form-grid form-grid-3">
+        <div class="form-group"><label>Aparelho</label><select id="manual-aparelho"></select></div>
+        <div class="form-group"><label>Tensão (V)</label><input type="number" id="manual-tensao" step="0.1" placeholder="Ex: 218.5"></div>
+        <div class="form-group"><label>Corrente (A)</label><input type="number" id="manual-corrente" step="0.01" placeholder="Ex: 7.60" required></div>
+        <div class="form-group"><label>Temperatura (°C)</label><input type="number" id="manual-temperatura" step="0.1" placeholder="opcional"></div>
+        <div class="form-group form-actions"><button type="submit" class="btn-primary">Registrar leitura</button></div>
+      </form>
+      <div id="manual-msg" class="form-msg"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-title">OBSERVAÇÕES E OCORRÊNCIAS ANOTADAS</div>
+      <form id="form-obs" class="form-obs">
+        <input type="text" id="obs-autor" placeholder="Seu nome (opcional)">
+        <input type="text" id="obs-texto" placeholder='Ex: "técnico da concessionária trocou o transformador"' required>
+        <button type="submit" class="btn-primary">Anotar</button>
+      </form>
+      <div id="obs-lista" class="obs-lista"></div>
+    </section>
+  </div>
+
+  <footer class="rodape">
+    VoltGuard — Sistema IoT de Monitoramento e Proteção de Energia · <span id="rodape-local">--</span> · dados atualizados automaticamente
+  </footer>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
